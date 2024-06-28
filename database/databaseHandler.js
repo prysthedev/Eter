@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion, Timestamp } = require('mongodb');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://admin:mO29Y4cMikV9U2Vf@eter.dsvmalt.mongodb.net/?retryWrites=true&w=majority&appName=Eter";
 
 const client = new MongoClient(uri, {
@@ -22,7 +22,7 @@ const database = client.db('Test');
 module.exports = {
     async addGuild(guildData) {
         const guildCollection = database.collection('Guilds');
-        const time = new Date.now() / 1000;
+        const time = new Date().getTime() / 1000;
 
         const guild = {
             id: guildData.id,
@@ -49,7 +49,7 @@ module.exports = {
 
     async addLog(logType, targetId, serverId, userId, reason, expiration) {
         const logCollection = database.collection('Logs');
-        const time = new Date.now() / 1000;
+        const time = new Date().getTime() / 1000;
 
         if (logType === "tempBan") {
             const log = {

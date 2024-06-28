@@ -1,6 +1,17 @@
-const { SlashCommandBuilder, PermissionFlagsBits, Guild } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, Guild, EmbedBuilder } = require('discord.js');
 const { addLog } = require('../../database/databaseHandler');
-const { Timestamp } = require('mongodb');
+
+function createBanEmbed(target, moderator){
+    const embed = new EmbedBuilder()
+        .setTitle(`${target} has been banned`)
+        .setColor("#ff0000")
+        .setFooter({
+            text: moderator,
+        })
+        .setTimestamp();
+
+    return embed;
+};
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -35,20 +46,20 @@ module.exports = {
             .then(
                 addLog('ban', targetUser.id, interaction.guildId, user.id, reason),
 
-                await interaction.reply({ content: 'User has been successfully banned.', ephemeral: true })
+                await interaction.reply({ embeds: [createBanEmbed(targetUser.username, user.username)] })
             )
             .catch (async err => {
                 await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });
             });
         } else {
-            const time = new Date.now() / 1000;
+            const time = new Date().getTime() / 1000;
             const expiration = time + (duration * 60);
 
             await interaction.guild.members.ban(targetUser.id, { reason: reason })
             .then(
                 addLog('tempBan', targetUser.id, interaction.guildId, user.id, reason, expiration),
 
-                await interaction.reply({ content: 'User has been successfully banned.', ephemeral: true })
+                await interaction.reply({ embeds: [createBanEmbed(targetUser.username, user.username)] })
             )
             .catch (async err => {
                 await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });
