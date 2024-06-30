@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits, Guild, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { addLog } = require('../../database/databaseHandler');
 
 function createHigherRankEmbed(moderator){
@@ -37,6 +37,34 @@ function createBanEmbed(target, moderator){
     return embed;
 };
 
+async function sendDirectMessage(user, reason, guildName, duration) {
+    if (duration == undefined) {
+        duration = 'Permanent'
+    }
+
+    const embed = new EmbedBuilder()
+        .setTitle(`You have been banned from ${guildName}.`)
+        .setColor("#ff0000")
+        .addFields(
+            {
+                name: "Reason:",
+                value: reason,
+                inline: false
+            },
+            {
+                name: "Duration:",
+                value: duration,
+                inline: false
+            }
+        );
+
+    await user.send({ embeds: [embed] })
+        .catch(err => {
+            console.log(err);
+            return 'failed';
+        });
+};
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ban')
@@ -64,6 +92,7 @@ module.exports = {
         const targetMember = interaction.options.getMember('user')
         const reason = interaction.options.getString('reason');
         const duration = interaction.options.getInteger('duration');
+        const directMessage = interaction.options.getBoolean('direct-message');
 
         if (targetMember.user.id == user.user.id || targetMember.user.id == interaction.guild.ownerId) {
             return await interaction.reply({ embeds: [createHigherRankEmbed(user.user.username)] });
@@ -78,6 +107,10 @@ module.exports = {
         };
 
         if (duration === null) {
+            if (directMessage == true) {
+                await sendDirectMessage(targetMember.user, reason, interaction.guild.name);
+            };
+
             await interaction.guild.members.ban(targetMember.user.id, { reason: `${user.user.username} | ${reason}` })
             .then(
                 addLog('ban', targetMember.user.id, interaction.guildId, user.user.id, reason),
@@ -90,6 +123,10 @@ module.exports = {
         } else {
             const time = new Date().getTime() / 1000;
             const expiration = time + (duration * 60);
+
+            if (directMessage == true) {
+                await sendDirectMessage(targetMember.user, reason, interaction.guild.name);
+            };
 
             await interaction.guild.members.ban(targetMember.user.id, { reason: `${user.user.username} | ${reason}` })
             .then(
