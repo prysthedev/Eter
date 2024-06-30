@@ -1,9 +1,33 @@
 const { SlashCommandBuilder, PermissionFlagsBits, Guild, EmbedBuilder } = require('discord.js');
 const { addLog } = require('../../database/databaseHandler');
 
+function createHigherRankEmbed(moderator){
+    const embed = new EmbedBuilder()
+        .setTitle(`You can't ban this member.`)
+        .setColor("#ff0000")
+        .setFooter({
+            text: moderator,
+        })
+        .setTimestamp();
+
+    return embed;
+};
+
+function createHigherRankEmbed2(moderator){
+    const embed = new EmbedBuilder()
+        .setTitle(`I can't ban this member.`)
+        .setColor("#ff0000")
+        .setFooter({
+            text: moderator,
+        })
+        .setTimestamp();
+
+    return embed;
+};
+
 function createBanEmbed(target, moderator){
     const embed = new EmbedBuilder()
-        .setTitle(`${target} has been banned`)
+        .setTitle(`${target} has been banned.`)
         .setColor("#ff0000")
         .setFooter({
             text: moderator,
@@ -37,16 +61,28 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
 	async execute(interaction, user) {
-        const targetUser = interaction.options.getUser('user');
+        const targetMember = interaction.options.getMember('user')
         const reason = interaction.options.getString('reason');
         const duration = interaction.options.getInteger('duration');
 
-        if (duration === null) {
-            await interaction.guild.members.ban(targetUser.id, { reason: reason })
-            .then(
-                addLog('ban', targetUser.id, interaction.guildId, user.id, reason),
+        if (targetMember.user.id == user.user.id || targetMember.user.id == interaction.guild.ownerId) {
+            return await interaction.reply({ embeds: [createHigherRankEmbed(user.user.username)] });
+        }
 
-                await interaction.reply({ embeds: [createBanEmbed(targetUser.username, user.username)] })
+        if (targetMember.roles.highest.position >= interaction.guild.members.me.roles.highest.position) {
+            return await interaction.reply({ embeds: [createHigherRankEmbed2(user.user.username)] });
+        };
+
+        if (targetMember.roles.highest.position >= user.roles.highest.position && user.user.id != interaction.guild.ownerId) {
+            return await interaction.reply({ embeds: [createHigherRankEmbed(user.user.username)] });
+        };
+
+        if (duration === null) {
+            await interaction.guild.members.ban(targetMember.user.id, { reason: `${user.user.username} | ${reason}` })
+            .then(
+                addLog('ban', targetMember.user.id, interaction.guildId, user.user.id, reason),
+
+                await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username)] })
             )
             .catch (async err => {
                 await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });
@@ -55,17 +91,17 @@ module.exports = {
             const time = new Date().getTime() / 1000;
             const expiration = time + (duration * 60);
 
-            await interaction.guild.members.ban(targetUser.id, { reason: reason })
+            await interaction.guild.members.ban(targetMember.user.id, { reason: `${user.user.username} | ${reason}` })
             .then(
-                addLog('tempBan', targetUser.id, interaction.guildId, user.id, reason, expiration),
+                addLog('tempBan', targetMember.user.id, interaction.guildId, user.user.id, reason, expiration),
 
-                await interaction.reply({ embeds: [createBanEmbed(targetUser.username, user.username)] })
+                await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username)] })
             )
             .catch (async err => {
                 await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });
             });
         };
 
-		console.log('[COMMANDS]', user.username, "just used the ban command");
+		console.log('[COMMANDS]', user.user.username, "just used the ban command");
 	}
 };

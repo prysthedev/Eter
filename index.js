@@ -35,7 +35,7 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 
 	try {
-		await command.execute(interaction, interaction.user);
+		await command.execute(interaction, interaction.member);
 	} catch (error) {
 		console.error(error);
 		if (interaction.replied || interaction.deferred) {
