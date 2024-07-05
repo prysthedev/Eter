@@ -100,6 +100,8 @@ module.exports = {
         console.log(`[DATABASE] Log channel was updated for guildId: ${guildId}`);
     },
 
+
+
     // async addLog(type, log) {
     //     const logData = database.collection('Bot Log');
 
@@ -107,6 +109,4 @@ module.exports = {
 
     //     }
     // }
-
-
 };
