@@ -18,10 +18,11 @@ try {
 };
 
 const database = client.db('Test');
+const guildCollection = database.collection('Guilds');
+const logCollection = database.collection('Logs');
 
 module.exports = {
     async addGuild(guildData) {
-        const guildCollection = database.collection('Guilds');
         const time = new Date().getTime() / 1000;
 
         const guild = {
@@ -40,15 +41,12 @@ module.exports = {
     },
 
     async isGuildInDatabase(id) {
-        const collection = database.collection('Guilds');
-
-        const result = await collection.findOne({ id: id });
+        const result = await guildCollection.findOne({ guildId: id });
 
         return result;
     },
 
     async addLog(logType, targetId, serverId, userId, reason, expiration) {
-        const logCollection = database.collection('Logs');
         const time = new Date().getTime() / 1000;
 
         if (logType === "tempBan") {
@@ -79,6 +77,27 @@ module.exports = {
 
             console.log(`[DATABASE] Log was added with _id: ${result.insertedId}`);
         }
+    },
+
+    async setLogChannelForGuild(guildId, webhookId, webhookToken) {
+        const schema = {
+            guildId: guildId,
+            webhookId: webhookId,
+            webhookToken: webhookToken
+        };
+
+        const result = await guildCollection.insertOne(schema);
+
+        console.log(`[DATABASE] Log channel was added with _id: ${result.insertedId}`);
+    },
+
+    async updateLogChannelForGuild(guildId, webhookId, webhookToken) {
+        await guildCollection.updateOne(
+            { guildId: guildId },
+            { $set: { webhookId: webhookId, webhookToken: webhookToken } }
+        );
+
+        console.log(`[DATABASE] Log channel was updated for guildId: ${guildId}`);
     },
 
     // async addLog(type, log) {
