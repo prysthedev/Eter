@@ -1,5 +1,5 @@
 module.exports = {
-    async createLog() {
+    async createBanLog(guildId, banData) {
         
     }
 };
