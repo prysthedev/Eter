@@ -47,8 +47,8 @@ module.exports = {
                 await webhook.send({
                     content: { embeds: [createEmbed(banData)] }
                 });
-            } catch {
-                
+            } catch (err) {
+                console.log(`[TASKS] Sending a moderation log failed | ${err}`);
             };
         };
     }
