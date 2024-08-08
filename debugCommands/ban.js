@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
-const { addLog, isInDebugMode } = require('../../database/databaseHandler');
-const { debugExecute } = require('../../debugCommands/ban');
+const { addLog } = require('../database/databaseHandler');
 
 function createHigherRankEmbed(moderator) {
     const embed = new EmbedBuilder()
@@ -129,59 +128,14 @@ async function sendDirectMessage(user, reason, guildName, duration) {
 };
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('ban')
-		.setDescription('Bans the user.')
-        .addUserOption(option => 
-            option.setName('user')
-                .setDescription('User you want to ban.')
-                .setRequired(true)
-        )
-        .addStringOption(option => 
-            option.setName('reason')
-                .setDescription('Reason for the ban.')
-        )
-        .addBooleanOption(option => 
-            option.setName('direct-message')
-                .setDescription('Banned user will be informed of his ban and the reason.')
-        )
-        .addStringOption(option => 
-            option.setName('duration')
-                .setDescription('Duration for the ban (permanent if empty). Ex: 1m (1 minute), 10d, 2w.')
-        )
-        .addBooleanOption(option => 
-            option.setName('preserve-messages')
-                .setDescription('Whether to preserve user messages or not.')
-        )
-        .addBooleanOption(option => 
-            option.setName('appealable')
-                .setDescription('Whether you want to allow the user to appeal his punishment.')
-        )
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
-
-	async execute(interaction, user) {
+	async debugExecute(info, interaction, user) {
         try {
-            const targetMember = interaction.options.getMember('user');
-            const reason = interaction.options.getString('reason');
-            const duration = interaction.options.getString('duration');
-            const directMessage = interaction.options.getBoolean('direct-message');
-            const preserveMessages = interaction.options.getBoolean('preserve-messages');
-            const deleteMessageSeconds = 604800;
-
-            if (await isInDebugMode(interaction.guild.id)) {
-                const info = {
-                    tm: targetMember,
-                    r: reason,
-                    d: duration,
-                    dm: directMessage,
-                    pm: preserveMessages,
-                    dms: deleteMessageSeconds
-                };
-
-                await debugExecute(info, interaction, user);
-
-                return console.log('[COMMANDS] Running debug command.');
-            };
+            const targetMember = info.tm;
+            const reason = info.r;
+            const duration = info.d;
+            const directMessage = info.dm;
+            const preserveMessages = info.pm;
+            const deleteMessageSeconds = info.dms;
 
             if (preserveMessages == true) {
                 deleteMessageSeconds = 0;
@@ -208,15 +162,9 @@ module.exports = {
                     await sendDirectMessage(targetMember.user, reason, interaction.guild.name);
                 };
 
-                await interaction.guild.members.ban(targetMember.user.id, { reason: `${user.user.username} | ${reason}`, deleteMessageSeconds: deleteMessageSeconds })
-                .then(
-                    addLog('ban', targetMember.user.id, interaction.guildId, user.user.id, reason),
+                addLog('ban', targetMember.user.id, interaction.guildId, user.user.id, reason),
 
-                    await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] })
-                )
-                .catch (async err => {
-                    await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });
-                });
+                await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] })
             } else {
                 const time = new Date().getTime() / 1000;
                 const expiration = convertTime(duration) + time;
@@ -226,18 +174,13 @@ module.exports = {
                     await sendDirectMessage(targetMember.user, reason, interaction.guild.name, convertTimeToReadable(duration));
                 };
 
-                await interaction.guild.members.ban(targetMember.user.id, { reason: `${user.user.username} | ${reason}`, deleteMessageSeconds: deleteMessageSeconds })
-                .then(
-                    addLog('tempBan', targetMember.user.id, interaction.guildId, user.user.id, reason, expiration),
+                addLog('tempBan', targetMember.user.id, interaction.guildId, user.user.id, reason, expiration),
 
-                    await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] })
-                )
-                .catch (async err => {
-                    await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });
-                });
+                await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] })
+                
             };
 
-            console.log('[COMMANDS]', user.user.username, "just used the ban command");
+            console.log('[DEBUG COMMANDS]', user.user.username, "just used the ban command");
         } catch (err) {
             await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });
         };
