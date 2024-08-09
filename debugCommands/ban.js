@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { addLog } = require('../database/databaseHandler');
+const { createBanLog } = require('../tasks/modLogHandler');
 
 function createHigherRankEmbed(moderator) {
     const embed = new EmbedBuilder()
@@ -128,7 +129,7 @@ async function sendDirectMessage(user, reason, guildName, duration) {
 };
 
 module.exports = {
-	async debugExecute(info, interaction, user) {
+	async debugExecute(info, interaction, user, client) {
         try {
             const targetMember = info.tm;
             const reason = info.r;
@@ -162,9 +163,11 @@ module.exports = {
                     await sendDirectMessage(targetMember.user, reason, interaction.guild.name);
                 };
 
-                addLog('ban', targetMember.user.id, interaction.guildId, user.user.id, reason),
+                addLog('ban', targetMember.user.id, interaction.guildId, user.user.id, reason);
 
-                await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] })
+                await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] });
+
+                createBanLog(interaction.guild.id, info, client);
             } else {
                 const time = new Date().getTime() / 1000;
                 const expiration = convertTime(duration) + time;
@@ -174,15 +177,16 @@ module.exports = {
                     await sendDirectMessage(targetMember.user, reason, interaction.guild.name, convertTimeToReadable(duration));
                 };
 
-                addLog('tempBan', targetMember.user.id, interaction.guildId, user.user.id, reason, expiration),
+                addLog('tempBan', targetMember.user.id, interaction.guildId, user.user.id, reason, expiration);
 
-                await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] })
-                
+                await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] });
+
+                createBanLog(interaction.guild.id, info, client);
             };
 
             console.log('[DEBUG COMMANDS]', user.user.username, "just used the ban command");
         } catch (err) {
-            await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });
+            console.log(`Unexpected error occured, try again later. | ${err}`);
         };
 	}
 };

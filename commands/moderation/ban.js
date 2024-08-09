@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { addLog, isInDebugMode } = require('../../database/databaseHandler');
 const { debugExecute } = require('../../debugCommands/ban');
+const { createBanLog } = require('../../tasks/modLogHandler');
 
 function createHigherRankEmbed(moderator) {
     const embed = new EmbedBuilder()
@@ -159,7 +160,7 @@ module.exports = {
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
-	async execute(interaction, user) {
+	async execute(interaction, user, client) {
         try {
             const targetMember = interaction.options.getMember('user');
             const reason = interaction.options.getString('reason');
@@ -168,17 +169,18 @@ module.exports = {
             const preserveMessages = interaction.options.getBoolean('preserve-messages');
             const deleteMessageSeconds = 604800;
 
-            if (await isInDebugMode(interaction.guild.id)) {
-                const info = {
-                    tm: targetMember,
-                    r: reason,
-                    d: duration,
-                    dm: directMessage,
-                    pm: preserveMessages,
-                    dms: deleteMessageSeconds
-                };
+            const info = {
+                tm: targetMember,
+                r: reason,
+                d: duration,
+                dm: directMessage,
+                pm: preserveMessages,
+                dms: deleteMessageSeconds,
+                m: user.user.username
+            };
 
-                await debugExecute(info, interaction, user);
+            if (await isInDebugMode(interaction.guild.id)) {
+                debugExecute(info, interaction, user, client);
 
                 return console.log('[COMMANDS] Running debug command.');
             };
@@ -212,7 +214,9 @@ module.exports = {
                 .then(
                     addLog('ban', targetMember.user.id, interaction.guildId, user.user.id, reason),
 
-                    await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] })
+                    await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] }),
+
+                    createBanLog(interaction.guild.id, info, client)
                 )
                 .catch (async err => {
                     await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });
@@ -230,7 +234,9 @@ module.exports = {
                 .then(
                     addLog('tempBan', targetMember.user.id, interaction.guildId, user.user.id, reason, expiration),
 
-                    await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] })
+                    await interaction.reply({ embeds: [createBanEmbed(targetMember.user.username, user.user.username, reason)] }),
+
+                    createBanLog(interaction.guild.id, info, client)
                 )
                 .catch (async err => {
                     await interaction.reply({ content: `Unexpected error occured, try again later. | ${err}`, ephemeral: true });

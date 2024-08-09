@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, WebhookClient } = require("discord.js");
 const { isGuildInDatabase } = require("../database/databaseHandler");
 
 function createEmbed(banData) {
@@ -7,29 +7,29 @@ function createEmbed(banData) {
         .addFields(
             {
             name: "Target:",
-            value: banData.target,
+            value: banData.tm,
             inline: false
             },
             {
             name: "Moderator:",
-            value: banData.moderator,
+            value: banData.m,
             inline: false
             },
             {
             name: "Reason:",
-            value: banData.reason,
+            value: banData.r,
             inline: false
             },
             {
             name: "Duration:",
-            value: banData.duration,
+            value: banData.d,
             inline: false
             },
         )
         .setThumbnail("https://cdn.discordapp.com/avatars/562694909702963220/6a834ffc29988cd8cb77e6f4caec7158.png?size=1024")
         .setColor('Red')
         .setFooter({
-            text: banData.moderator,
+            text: banData.m,
         })
         .setTimestamp();
 
@@ -41,12 +41,15 @@ module.exports = {
         const results = await isGuildInDatabase(guildId);
 
         if (results != null) {
-            const webhook = await client.fetchWehook(results.webhookId, results.webhookToken);
+            const webhookClient = new WebhookClient({ id: results.webhookId, token: results.webhookToken });
 
             try {
-                await webhook.send({
-                    content: { embeds: [createEmbed(banData)] }
+                const embed = createEmbed(banData)
+
+                await webhookClient.send({
+                    embeds: [embed]
                 });
+                
             } catch (err) {
                 console.log(`[TASKS] Sending a moderation log failed | ${err}`);
             };
