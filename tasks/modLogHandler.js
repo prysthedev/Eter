@@ -2,12 +2,13 @@ const { EmbedBuilder, WebhookClient } = require("discord.js");
 const { isGuildInDatabase } = require("../database/databaseHandler");
 
 function createEmbed(banData) {
-    const embed = new EmbedBuilder()
+    try {
+        const embed = new EmbedBuilder()
         .setTitle("User has been banned.")
         .addFields(
             {
             name: "Target:",
-            value: banData.tm,
+            value: banData.tm.user.username,
             inline: false
             },
             {
@@ -33,7 +34,10 @@ function createEmbed(banData) {
         })
         .setTimestamp();
 
-    return embed;
+        return embed;
+    } catch (err) {
+        console.log(err);
+    };
 };
 
 module.exports = {
@@ -44,12 +48,11 @@ module.exports = {
             const webhookClient = new WebhookClient({ id: results.webhookId, token: results.webhookToken });
 
             try {
-                const embed = createEmbed(banData)
+                const embed = createEmbed(banData);
 
-                await webhookClient.send({
+                webhookResponse = await webhookClient.send({
                     embeds: [embed]
                 });
-                
             } catch (err) {
                 console.log(`[TASKS] Sending a moderation log failed | ${err}`);
             };

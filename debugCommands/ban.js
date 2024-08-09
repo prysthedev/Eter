@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { addLog } = require('../database/databaseHandler');
 const { createBanLog } = require('../tasks/modLogHandler');
+const { convertTime, convertTimeToReadable } = require('../modules/timeModule');
 
 function createHigherRankEmbed(moderator) {
     const embed = new EmbedBuilder()
@@ -37,68 +38,6 @@ function createBanEmbed(target, moderator, reason) {
 
     return embed;
 };
-
-function convertTime(duration) {
-    if (duration.endsWith('d')) {
-        duration = parseInt(duration);
-        duration = (duration * 24 * 60 * 60);
-    } else if (duration.endsWith('m')) {
-        duration = parseInt(duration);
-        duration = (duration * 60);
-    } else if (duration.endsWith('h')) {
-        duration = parseInt(duration);
-        duration = (duration * 60 * 60);
-    } else if (duration.endsWith('w')) {
-        duration = parseInt(duration);
-        duration = (duration * 7 * 24 * 60 * 60);
-    } else if (duration.endsWith('y')) {
-        duration = parseInt(duration);
-        duration = (duration * 365 * 24 * 60 * 60);
-    };
-
-    return duration;
-};
-
-function convertTimeToReadable(duration) {
-    if (duration.endsWith('d')) {
-        duration = parseInt(duration);
-        if (duration > 1) {
-            duration = `${duration} days`
-        } else {
-            duration = `${duration} day`
-        }
-    } else if (duration.endsWith('m')) {
-        duration = parseInt(duration);
-        if (duration > 1) {
-            duration = `${duration} minutes`
-        } else {
-            duration = `${duration} minute`
-        }
-    } else if (duration.endsWith('h')) {
-        duration = parseInt(duration);
-        if (duration > 1) {
-            duration = `${duration} hours`
-        } else {
-            duration = `${duration} hour`
-        }
-    } else if (duration.endsWith('w')) {
-        duration = parseInt(duration);
-        if (duration > 1) {
-            duration = `${duration} weeks`
-        } else {
-            duration = `${duration} week`
-        }
-    } else if (duration.endsWith('y')) {
-        duration = parseInt(duration);
-        if (duration > 1) {
-            duration = `${duration} years`
-        } else {
-            duration = `${duration} year`
-        }
-    };
-
-    return duration;
-}
 
 async function sendDirectMessage(user, reason, guildName, duration) {
     if (duration == undefined) {
@@ -142,7 +81,7 @@ module.exports = {
                 deleteMessageSeconds = 0;
             };
 
-            if (isNaN(parseInt(duration)) && duration != null) {
+            if (isNaN(parseInt(duration)) && duration != null && duration != 'Permanent') {
                 return await interaction.reply({ content: 'Use valid duration time. Examples: (24h, 2w, 1y, 20m (20 minutes))', ephemeral: true });
             };
 
@@ -170,11 +109,11 @@ module.exports = {
                 createBanLog(interaction.guild.id, info, client);
             } else {
                 const time = new Date().getTime() / 1000;
-                const expiration = convertTime(duration) + time;
+                const expiration = await convertTime(duration) + time;
                 
 
                 if (directMessage == true) {
-                    await sendDirectMessage(targetMember.user, reason, interaction.guild.name, convertTimeToReadable(duration));
+                    await sendDirectMessage(targetMember.user, reason, interaction.guild.name, await convertTimeToReadable(duration));
                 };
 
                 addLog('tempBan', targetMember.user.id, interaction.guildId, user.user.id, reason, expiration);
