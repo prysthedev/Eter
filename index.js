@@ -50,4 +50,4 @@ client.on(Events.InteractionCreate, async interaction => {
 //     joinedGuildEvent.joinedGuild(guild);
 // });
 
-client.login("ODg3MzMwNDgzNjU3MTQyMjgy.GfBApu.XEle51gF324-7ORXUxuJlaNL2q4pXhMp3s35mQ");
+client.login("");
